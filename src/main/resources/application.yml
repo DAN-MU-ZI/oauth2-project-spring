@@ -1,0 +1,29 @@
+spring:
+  thymeleaf:
+    cache: false
+
+  h2:
+    console:
+      enabled: true
+
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: 707089347770-q3u1vocvt21pjtnaq12c47871tccg42q.apps.googleusercontent.com
+            client-secret: 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
+            scope:
+              - email
+              - profile
+logging:
+  level:
+    root: info
+    org.springframework: debug
+    org.*: info
