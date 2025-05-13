@@ -1,23 +1,16 @@
 package org.project.oauth2project.config;
 
-import org.project.oauth2project.config.oauth2.OAuth2FailureHandler;
-import org.project.oauth2project.config.oauth2.OAuth2SuccessHandler;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver;
-import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
-import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
-import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 
 @Configuration
@@ -25,6 +18,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class SecurityConfig {
 	private final ClientRegistrationRepository repository;
+	private final OAuth2SuccessHandler successHandler;
+
 	@Bean
 	public OAuth2AuthorizationRequestResolver resolver() {
 		var defaultResolver = new DefaultOAuth2AuthorizationRequestResolver(repository, "/oauth2/authorization");
@@ -52,6 +47,7 @@ public class SecurityConfig {
 			.oauth2Login(oauth2 -> oauth2
 				.authorizationEndpoint(userinfo -> userinfo
 					.authorizationRequestResolver(resolver()))
+				.successHandler(successHandler)
 				.defaultSuccessUrl("/"))
 
 			// 로그아웃 설정 포함 (기본 흐름 이해 목적)
