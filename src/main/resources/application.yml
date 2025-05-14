@@ -2,28 +2,35 @@ spring:
   thymeleaf:
     cache: false
 
-  h2:
-    console:
-      enabled: true
-
-  datasource:
-    url: jdbc:h2:mem:testdb
-    driver-class-name: org.h2.Driver
-    username: sa
-    password:
+  #  h2:
+  #    console:
+  #      enabled: true
+  #      path: /h2-console
+  #
+  #  datasource:
+  #    driver-class-name: org.h2.Driver
+  #    url: jdbc:h2:mem:test
+  #    username: sa
+  #    password:
+  #
+  #  jpa:
+  #    hibernate:
+  #      ddl-auto: create
+  #    show-sql: true
 
   security:
-    oauth2:
-      client:
-        registration:
-          google:
-            client-id: 707089347770-q3u1vocvt21pjtnaq12c47871tccg42q.apps.googleusercontent.com
-            client-secret: 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
-            scope:
-              - email
-              - profile
+    oauth2.client:
+      registration:
+        google:
+          client-id: ${OAUTH2_GOOGLE_CLIENT_ID}
+          client-secret: ${OAUTH2_GOOGLE_CLIENT_SECRET}
+          scope:
+            - email
+            - profile
+
+
 logging:
   level:
-    root: info
-    org.springframework: debug
-    org.*: info
+    root: INFO
+    com.example.oauth2proj.*: debug
+

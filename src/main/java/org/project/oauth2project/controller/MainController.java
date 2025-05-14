@@ -16,8 +16,6 @@ public class MainController {
 	@GetMapping("/")
 	public String home(Model model, @AuthenticationPrincipal OAuth2User principal) {
 		if (principal != null) {
-			model.addAttribute("name", principal.getAttribute("name"));
-
 			principal.getAuthorities().forEach(grantedAuthority -> {
 				log.info("requested granted authority: {}", grantedAuthority);
 			});
@@ -28,6 +26,7 @@ public class MainController {
 				.findFirst()
 				.ifPresent(role -> {
 					log.info("find role : {}", role.getAuthority());
+					model.addAttribute("name", principal.getAttribute("name"));
 					model.addAttribute("role", role.getAuthority());
 				});
 

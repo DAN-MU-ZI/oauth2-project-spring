@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 import org.project.oauth2project.service.MemberService;
 import org.springframework.security.core.Authentication;
@@ -22,6 +23,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -42,8 +44,21 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
 		String username = oauth2User.getName();
 		String desiredRole = extractRole(req);
 
-		String existingRole = memberService.findOrCreateWithRole(email, username, desiredRole)
-			.orElseThrow(() -> new OAuth2AuthenticationException("Member role does not match desired role"));
+		Optional<String> optRole = memberService.findOrCreateWithRole(email, username, desiredRole);
+
+		if (optRole.isEmpty()) {
+			SecurityContextHolder.clearContext();
+			HttpSession session = req.getSession(false);
+			if (session != null) {
+				session.invalidate();
+			}
+			throw new OAuth2AuthenticationException(
+				new OAuth2Error("invalid_role"),
+				"Member role does not match desired role"
+			);
+		}
+
+		String existingRole = optRole.get();
 
 		Collection<GrantedAuthority> updated = new ArrayList<>(oauth2User.getAuthorities());
 		updated.add(new SimpleGrantedAuthority("ROLE_" + existingRole.toUpperCase()));
@@ -59,6 +74,7 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
 
 		res.sendRedirect("/");
 	}
+
 
 	private String extractRole(HttpServletRequest req) {
 		String rawState = req.getParameter("state");
