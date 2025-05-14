@@ -33,8 +33,6 @@ public class HmacSigner {
 		}
 		String payload = signedValue.substring(0, idx);
 
-		// String signature = signedValue.substring(idx + 1);
-
 		String expectedSig = sign(payload);
 
 		if (!signedValue.equals(expectedSig)) {
