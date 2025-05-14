@@ -3,8 +3,6 @@ package org.project.oauth2project.config;
 import java.util.Map;
 
 import org.project.oauth2project.handler.HmacSigner;
-import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
-import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver;
 import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest;
 
@@ -20,12 +18,6 @@ import lombok.extern.slf4j.Slf4j;
 public class CustomAuthorizationRequestResolver implements OAuth2AuthorizationRequestResolver {
 	private final OAuth2AuthorizationRequestResolver delegate;
 	private final ObjectMapper mapper;
-
-	public CustomAuthorizationRequestResolver(ClientRegistrationRepository repo, String baseUri,
-		ObjectMapper objectMapper) {
-		this.delegate = new DefaultOAuth2AuthorizationRequestResolver(repo, baseUri);
-		this.mapper = objectMapper;
-	}
 
 	@Override
 	public OAuth2AuthorizationRequest resolve(HttpServletRequest request) {

@@ -3,10 +3,12 @@ package org.project.oauth2project.handler;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
+import org.project.oauth2project.config.JwtTokenProvider;
 import org.project.oauth2project.service.MemberService;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -21,6 +23,7 @@ import org.springframework.security.web.authentication.AuthenticationSuccessHand
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
@@ -32,6 +35,7 @@ import lombok.extern.slf4j.Slf4j;
 public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
 	private final ObjectMapper mapper;
 	private final MemberService memberService;
+	private final JwtTokenProvider jwtTokenProvider;
 
 	@Override
 	public void onAuthenticationSuccess(HttpServletRequest req, HttpServletResponse res, Authentication auth) throws
@@ -60,8 +64,14 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
 
 		String existingRole = optRole.get();
 
+
 		Collection<GrantedAuthority> updated = new ArrayList<>(oauth2User.getAuthorities());
-		updated.add(new SimpleGrantedAuthority("ROLE_" + existingRole.toUpperCase()));
+		SimpleGrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + existingRole.toUpperCase());
+		updated.add(authority);
+
+		String token = jwtTokenProvider.createToken(email, Collections.singletonList(authority.getAuthority()));
+		Cookie cookie = getCookie(token);
+		res.addCookie(cookie);
 
 		String nameKey = resolveNameAttributeKey(oauth2User);
 
@@ -75,6 +85,14 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
 		res.sendRedirect("/");
 	}
 
+	private static Cookie getCookie(String token) {
+		Cookie cookie = new Cookie("accessToken", token);
+		cookie.setHttpOnly(true);
+		cookie.setSecure(true);
+		cookie.setPath("/");
+		cookie.setMaxAge(3600);
+		return cookie;
+	}
 
 	private String extractRole(HttpServletRequest req) {
 		String rawState = req.getParameter("state");

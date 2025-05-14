@@ -28,6 +28,7 @@ public class MemberService {
 	}
 
 	public Member createMember(String email, String username, String desiredRole) {
+		log.info("Creating member with email: {}", email);
 		Member m = new Member(username, email, desiredRole);
 		return memberRepository.save(m);
 	}
@@ -42,5 +43,9 @@ public class MemberService {
 				"Member role does not match desired role");
 		}
 		return Optional.ofNullable(role);
+	}
+
+	public Optional<Member> findMemberByEmail(String email) {
+		return memberRepository.findByEmail(email);
 	}
 }

@@ -8,10 +8,12 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -25,9 +27,11 @@ public class SecurityConfig {
 	private final ObjectMapper objectMapper;
 	private final MemberService memberService;
 
+	private final JwtTokenProvider jwtTokenProvider;
+
 	@Bean
 	public OAuth2SuccessHandler oauth2SuccessHandler() {
-		return new OAuth2SuccessHandler(objectMapper, memberService);
+		return new OAuth2SuccessHandler(objectMapper, memberService, jwtTokenProvider);
 	}
 
 	@Bean
@@ -47,6 +51,9 @@ public class SecurityConfig {
 			// 기본 폼 로그인도 사용하지 않으므로 비활성화
 			.formLogin(AbstractHttpConfigurer::disable)
 
+			// stateless 기반 통신
+			.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
 			// H2 콘솔은 iframe 기반이라 sameOrigin 으로 허용
 			.headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
 
@@ -56,12 +63,16 @@ public class SecurityConfig {
 			.authorizeHttpRequests(req -> req.anyRequest().permitAll())
 
 			// OAuth2 인가 코드 흐름 테스트를 위한 기본 로그인 설정
-			.oauth2Login(oauth2 -> oauth2.authorizationEndpoint(
-					auth -> auth.authorizationRequestResolver(oAuth2AuthorizationRequestResolver()))
+			.oauth2Login(oauth2 -> oauth2
+				.authorizationEndpoint(auth -> auth
+					.authorizationRequestResolver(oAuth2AuthorizationRequestResolver()))
 				.successHandler(oauth2SuccessHandler()))
 
 			// 로그아웃 설정 포함 (기본 흐름 이해 목적)
-			.logout(logout -> logout.invalidateHttpSession(true).deleteCookies("JSESSIONID").logoutSuccessUrl("/"));
+			.logout(logout -> logout.invalidateHttpSession(true).deleteCookies("JSESSIONID").logoutSuccessUrl("/"))
+			.addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider), UsernamePasswordAuthenticationFilter.class);
+			// 	UsernamePasswordAuthenticationFilter.class);
+		;
 
 		return http.build();
 	}
