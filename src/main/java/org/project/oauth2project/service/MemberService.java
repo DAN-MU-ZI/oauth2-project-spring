@@ -48,4 +48,17 @@ public class MemberService {
 	public Optional<Member> findMemberByEmail(String email) {
 		return memberRepository.findByEmail(email);
 	}
+
+	public Member findOrCreateMember(String email, String username, String desiredRole) {
+		return getMemberByEmail(email)
+			.orElseGet(() -> createMember(email, username, desiredRole));
+	}
+
+	public void validateMemberRole(Member member, String desiredRole) {
+		if (!member.getRole().equals(desiredRole)) {
+			log.info("Role mismatch: expected {}, but was {}", desiredRole, member.getRole());
+			throw new OAuth2AuthenticationException(new OAuth2Error("role_mismatch"),
+				"Member role does not match desired role");
+		}
+	}
 }

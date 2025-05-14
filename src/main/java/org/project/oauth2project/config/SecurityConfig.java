@@ -69,9 +69,12 @@ public class SecurityConfig {
 				.successHandler(oauth2SuccessHandler()))
 
 			// 로그아웃 설정 포함 (기본 흐름 이해 목적)
-			.logout(logout -> logout.invalidateHttpSession(true).deleteCookies("JSESSIONID").logoutSuccessUrl("/"))
+			.logout(logout -> logout
+				.invalidateHttpSession(true)
+				.deleteCookies("JSESSIONID", "accessToken")
+				.logoutSuccessUrl("/")
+			)
 			.addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider), UsernamePasswordAuthenticationFilter.class);
-			// 	UsernamePasswordAuthenticationFilter.class);
 		;
 
 		return http.build();

@@ -4,11 +4,13 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
 import org.project.oauth2project.config.JwtTokenProvider;
+import org.project.oauth2project.entity.Member;
 import org.project.oauth2project.service.MemberService;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -48,41 +50,37 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
 		String username = oauth2User.getName();
 		String desiredRole = extractRole(req);
 
-		Optional<String> optRole = memberService.findOrCreateWithRole(email, username, desiredRole);
+		try {
+			Member member = memberService.findOrCreateMember(email, username, desiredRole);
+			memberService.validateMemberRole(member, desiredRole);
 
-		if (optRole.isEmpty()) {
+			// 권한 추가
+			Collection<GrantedAuthority> updatedAuthorities = new ArrayList<>(oauth2User.getAuthorities());
+			updatedAuthorities.add(member.getAuthority());
+
+			// 토큰 생성
+			List<String> roles = Collections.singletonList(member.getAuthority().getAuthority());
+			String token = jwtTokenProvider.createToken(email, roles);
+			Cookie cookie = getCookie(token);
+			res.addCookie(cookie);
+
+			// 새로운 Principal 설정
+			String nameKey = resolveNameAttributeKey(oauth2User);
+			DefaultOAuth2User newPrincipal = new DefaultOAuth2User(updatedAuthorities, oauth2User.getAttributes(), nameKey);
+			OAuth2AuthenticationToken newAuth = new OAuth2AuthenticationToken(newPrincipal, updatedAuthorities, oauthToken.getAuthorizedClientRegistrationId());
+			newAuth.setDetails(oauthToken.getDetails());
+			SecurityContextHolder.getContext().setAuthentication(newAuth);
+
+			res.sendRedirect("/");
+
+		} catch (OAuth2AuthenticationException ex) {
 			SecurityContextHolder.clearContext();
 			HttpSession session = req.getSession(false);
 			if (session != null) {
 				session.invalidate();
 			}
-			throw new OAuth2AuthenticationException(
-				new OAuth2Error("invalid_role"),
-				"Member role does not match desired role"
-			);
+			throw ex;
 		}
-
-		String existingRole = optRole.get();
-
-
-		Collection<GrantedAuthority> updated = new ArrayList<>(oauth2User.getAuthorities());
-		SimpleGrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + existingRole.toUpperCase());
-		updated.add(authority);
-
-		String token = jwtTokenProvider.createToken(email, Collections.singletonList(authority.getAuthority()));
-		Cookie cookie = getCookie(token);
-		res.addCookie(cookie);
-
-		String nameKey = resolveNameAttributeKey(oauth2User);
-
-		DefaultOAuth2User newPrincipal = new DefaultOAuth2User(updated, oauth2User.getAttributes(), nameKey);
-
-		OAuth2AuthenticationToken newAuth = new OAuth2AuthenticationToken(newPrincipal, updated,
-			oauthToken.getAuthorizedClientRegistrationId());
-		newAuth.setDetails(oauthToken.getDetails());
-		SecurityContextHolder.getContext().setAuthentication(newAuth);
-
-		res.sendRedirect("/");
 	}
 
 	private static Cookie getCookie(String token) {
