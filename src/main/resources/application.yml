@@ -22,8 +22,8 @@ spring:
     oauth2.client:
       registration:
         google:
-          client-id: ${OAUTH2_GOOGLE_CLIENT_ID}
-          client-secret: ${OAUTH2_GOOGLE_CLIENT_SECRET}
+          client-id: ${GOOGLE_CLIENT_ID}
+          client-secret: ${GOOGLE_CLIENT_SECRET}
           scope:
             - email
             - profile
